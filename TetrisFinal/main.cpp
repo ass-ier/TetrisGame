@@ -20,6 +20,7 @@
 #define GRID_WIDTH 10
 #define GRID_HEIGHT 20
 
+
 int grid[GRID_HEIGHT][GRID_WIDTH] = {0};
 int currentShape;
 int nextShape;
@@ -213,10 +214,10 @@ void drawNextTetromino() {
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
     drawGrid();
-
+    
     // Draw current tetromino
     drawTetromino(currentTetromino, currentX, currentY);
-
+    
     // Draw placed blocks
     glColor3f(1.0f, 0.0f, 0.0f); // Red for placed blocks
     for (int y = 0; y < GRID_HEIGHT; ++y) {
@@ -226,18 +227,18 @@ void display() {
             }
         }
     }
-
+    
     // Define sidebar dimensions and positions
     int sidebarWidth = SCREEN_WIDTH - GRID_WIDTH * BLOCK_SIZE;
     int sidebarX = GRID_WIDTH * BLOCK_SIZE;
     int sidebarHeight = SCREEN_HEIGHT;
     int centerX = sidebarWidth / 2;
-
+    
     // Draw next tetromino centered in the sidebar, slightly lower
     glColor3f(0.0f, 0.0f, 1.0f); // Blue for the next tetromino
     int nextX = sidebarX + centerX - 2; // Center the next tetromino
     int nextY = 3; // Lowered position in the sidebar
-
+    
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             if (SHAPES[nextShape][i][j]) {
@@ -245,7 +246,7 @@ void display() {
             }
         }
     }
-
+    
     // Display game-over message and score if game is over
     glColor3f(1.0f, 1.0f, 1.0f);
     if (gameOver) {
@@ -254,13 +255,22 @@ void display() {
         while (*msg) {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *msg++);
         }
-
+        
+        // Display the score
         glRasterPos2f(sidebarX + centerX - 50, SCREEN_HEIGHT / 2 + 20);
         char scoreText[20];
         sprintf(scoreText, "Score: %d", score);
         for (char *c = scoreText; *c != '\0'; c++) {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
         }
+        
+        // Display "Restart game with 'R'" below the score
+        glRasterPos2f(sidebarX + centerX - 50, SCREEN_HEIGHT / 2 + 50);
+        const char *restartMsg = "Restart game with 'R'";
+        while (*restartMsg) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *restartMsg++);
+        }
+        
     } else {
         glRasterPos2f(sidebarX + centerX - 50, SCREEN_HEIGHT - 30); // Adjusted to center score in sidebar
         char scoreText[20];
@@ -269,10 +279,10 @@ void display() {
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
         }
     }
-
+    
     glutSwapBuffers();
+    
 }
-
 void timer(int value) {
     if (!gameOver) {
         fallTime += fallSpeed;
@@ -299,12 +309,41 @@ void specialKeys(int key, int x, int y) {
     }
 }
 
-void keyboard(unsigned char key, int x, int y) {
-    if (key == 32) {  // Space bar for instant drop
-        instantDrop();
+
+void restartGame() {
+    // Reset game state variables
+    memset(grid, 0, sizeof(grid)); // Clear the grid
+    score = 0;                      // Reset score
+    gameOver = false;               // Reset game over state
+    fallTime = 0;                   // Reset fall time
+
+    // Initialize the first and next Tetromino shapes
+    currentShape = rand() % 7;
+    nextShape = rand() % 7;
+    memcpy(currentTetromino, SHAPES[currentShape], sizeof(currentTetromino));
+
+    // Reset Tetromino position
+    currentX = GRID_WIDTH / 2 - 2;
+    currentY = 0;
+
+    // Check if the game can start
+    if (!checkCollision(0, 0, currentTetromino)) {
+        gameOver = true; // If it can't, the game is over
     }
 }
 
+void keyboard(unsigned char key, int x, int y) {
+   if (gameOver) {
+            if (key == 'r' || key == 'R') {
+                restartGame(); // Restart the game
+            }
+        } else {
+            if (key == ' ') {
+                instantDrop();
+            }
+        }
+
+}
 void init() {
     srand(static_cast<unsigned int>(time(0)));
     currentShape = rand() % 7;
